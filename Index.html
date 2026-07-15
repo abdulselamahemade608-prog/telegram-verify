@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Verification</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #182533;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            padding: 20px;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-text {
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="loadingIcon" class="loader"></div>
+    <h2 id="statusTitle">የመሳሪያ ማረጋገጫ (Device Verification)</h2>
+    <p id="statusDesc" class="status-text">መሳሪያዎን በመፈተሽ ላይ ነን፣ እባክዎ ይጠብቁ...</p>
+</div>
+
+<script>
+    // Initialize Telegram Web App
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const user = tg.initDataUnsafe?.user;
+    
+    if (!user) {
+        document.getElementById('statusDesc').innerText = "እባክዎ ይህንን ገጽ በቴሌግራም ቦት በኩል ብቻ ይክፈቱት።";
+        document.getElementById('loadingIcon').style.display = 'none';
+    } else {
+        runVerification(user.id);
+    }
+
+    async function runVerification(userId) {
+        try {
+            // 1. Multi-Account ማወቂያ (Local Storage Check)
+            const storedUserId = localStorage.getItem('verified_tg_user');
+            
+            if (storedUserId && storedUserId != userId) {
+                // በአንድ ስልክ ላይ ሌላ አካውንት ሲቀየር
+                handleFailure("Multi-Account Detected", "በአንድ መሳሪያ ላይ ከአንድ በላይ አካውንት መጠቀም የተከለከለ ነው!");
+                return;
+            }
+
+            // 2. VPN / Proxy ማወቂያ (IP API Check)
+            // ማሳሰቢያ፡ vpnapi.io ወይም ipqualityscore የመሰሉ ነፃ APIዎችን መጠቀም ትችላለህ
+            const response = await fetch('https://ipapi.co/json/');
+            const ipData = await response.json();
+
+            // የኢትዮጵያ IP ካልሆነ ወይም VPN/Proxy ከተገኘ (ipapi.co አንዳንድ ጊዜ የሆስቲንግ አይፒዎችን ይለያል)
+            // ይበልጥ አስተማማኝ ለማድረግ vpnapi.io መጠቀም ይመረጣል
+            const isEthiopia = ipData.country_code === 'ET';
+            
+            if (!isEthiopia) {
+                handleFailure("VPN Detected", "እባክዎ ቪፒኤን (VPN) ያጥፉ እና እንደገና ይሞክሩ!");
+                return;
+            }
+
+            // ማረጋገጫውን ካለፈ፡ የቴሌግራም መታወቂያውን በስልኩ ላይ ሴቭ እናደርገዋለን
+            localStorage.setItem('verified_tg_user', userId);
+            handleSuccess(userId);
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('statusDesc').innerText = "ስህተት አጋጥሟል! እባክዎ የበይነመረብ ግንኙነትዎን ፈትሸው በድጋሚ ይሞክሩ።";
+            document.getElementById('loadingIcon').style.display = 'none';
+        }
+    }
+
+    function handleSuccess(userId) {
+        document.getElementById('loadingIcon').style.display = 'none';
+        document.getElementById('statusTitle').innerText = "✅ ተረጋግጧል!";
+        document.getElementById('statusDesc').innerText = "ማረጋገጫው በተሳካ ሁኔታ አልፏል። ወደ ቦቱ መመለስ ይችላሉ።";
+        
+        // ውጤቱን ለ Bots.business ለመላክ (Webhook ወይም sendData መጠቀም ይቻላል)
+        // KeyboardButton ከሆነ sendData ይሰራል፣ Inline Button ከሆነ ግን Webhook ይመረጣል
+        tg.sendData(JSON.stringify({ status: "VERIFIED", user_id: userId }));
+        
+        setTimeout(() => {
+            tg.close();
+        }, 2000);
+    }
+
+    function handleFailure(reason, message) {
+        document.getElementById('loadingIcon').style.display = 'none';
+        document.getElementById('statusTitle').innerText = "❌ ማረጋገጫው አልተሳካም!";
+        document.getElementById('statusDesc').innerText = message;
+        
+        // የማጭበርበር ሙከራውን ለቦቱ እንልካለን
+        tg.sendData(JSON.stringify({ status: "BANNED", reason: reason }));
+        
+        setTimeout(() => {
+            tg.close();
+        }, 3000);
+    }
+</script>
+</body>
+</html>
