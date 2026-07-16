@@ -3,203 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device Verification</title>
+    <title>ስልክ ማረጋገጫ (Verification)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            background-color: #17212b;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+        * {
+            box-sizing: border-box;
             margin: 0;
-            overflow: hidden;
+            padding: 0;
         }
-
-        .container {
-            text-align: center;
-            width: 80%;
-            max-width: 300px;
-        }
-
-        /* የሚሽከረከር ክበብ እና የስልክ ምልክት */
-        .phone-container {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            margin: 0 auto 30px auto;
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
         }
-
-        .circle-loader {
-            position: absolute;
-            width: 130px;
-            height: 130px;
-            border: 4px solid rgba(52, 152, 219, 0.1);
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1.5s linear infinite;
+        .container {
+            background: #ffffff;
+            padding: 35px 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            border: 1px solid #eaeaea;
         }
-
-        .phone-icon {
-            width: 50px;
+        .icon-box {
+            width: 80px;
             height: 80px;
-            border: 4px solid #3498db;
-            border-radius: 12px;
-            position: relative;
-            background-color: transparent;
-        }
-
-        .phone-icon::after {
-            content: '';
-            position: absolute;
-            bottom: 6px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 8px;
-            height: 8px;
-            background-color: #3498db;
+            background: #e1f5fe;
             border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px auto;
         }
-
+        .icon {
+            font-size: 40px;
+        }
         h2 {
-            font-size: 1.6rem;
-            margin: 10px 0;
-            font-weight: 600;
+            font-size: 22px;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            font-weight: 700;
         }
-
-        /* ሪል ፕሮግረስ ባር */
-        .progress-bar-container {
+        p {
+            font-size: 14px;
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background-color: #0088cc;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
             width: 100%;
-            height: 6px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            margin: 20px 0;
-            overflow: hidden;
+            transition: background 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.2);
         }
-
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: #3498db;
-            border-radius: 10px;
-            transition: width 0.4s ease;
+        .btn:active {
+            transform: scale(0.98);
+            background-color: #0077b5;
         }
-
-        .status-text {
-            color: #7f8c8d;
-            font-size: 0.95rem;
-            margin-top: 5px;
+        .error-container {
+            color: #d32f2f;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .error-icon-box {
+            background: #ffebee;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="phone-container">
-        <div class="circle-loader" id="loader"></div>
-        <div class="phone-icon"></div>
+    <div class="container" id="app-container">
+        <div class="icon-box">
+            <span class="icon">🔐</span>
+        </div>
+        <h2>ስልክዎን ያረጋግጡ</h2>
+        <p>የቴሌግራም አካውንትዎን ትክክለኛነት ለማረጋገጥ እባክዎ ከታች ያለውን <b>"አሁን አረጋግጥ"</b> የሚለውን ሰማያዊ ቁልፍ ይጫኑ።</p>
+        <button class="btn" id="verify-btn">አሁን አረጋግጥ</button>
     </div>
-    
-    <h2 id="statusTitle">Device Verification</h2>
-    
-    <div class="progress-bar-container">
-        <div class="progress-bar" id="progressBar"></div>
-    </div>
-    
-    <p id="statusDesc" class="status-text">Scanning your device...</p>
-</div>
 
-<script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-    const user = tg.initDataUnsafe?.user;
-    const progressBar = document.getElementById('progressBar');
-    const statusDesc = document.getElementById('statusDesc');
-    const statusTitle = document.getElementById('statusTitle');
-    const loader = document.getElementById('loader');
+        const appContainer = document.getElementById('app-container');
+        const verifyBtn = document.getElementById('verify-btn');
 
-    if (!user) {
-        statusDesc.innerText = "እባክዎ በቴሌግራም ቦት በኩል ብቻ ይክፈቱት!";
-        loader.style.animation = "none";
-    } else {
-        startVerificationProcess(user.id);
-    }
+        // 1. ቴሌግራም መሆኑን ለማረጋገጥ 'initData' መኖሩን ቼክ እናደርጋለን
+        if (!tg || !tg.initData || tg.initData === "") {
+            appContainer.innerHTML = `
+                <div class="icon-box error-icon-box">
+                    <span class="icon">⚠️</span>
+                </div>
+                <h2 class="error-container">ስህተት!</h2>
+                <p class="error-container">እባክዎ ይህንን ዌብ አፕ በቴሌግራም ቦት በኩል ብቻ ይክፈቱ!</p>
+            `;
+        } else {
+            // 2. ከሊንኩ ላይ የ Bots.business ዌብሁክ URLን እንቀበላለን
+            const urlParams = new URLSearchParams(window.location.search);
+            const webhookUrl = urlParams.get('webhook');
 
-    async function startVerificationProcess(userId) {
-        // 1. መጀመሪያ ስካን ሲያደርግ የሚታይ (0% - 40%)
-        updateProgress(30, "Checking hardware info...");
-        await sleep(1500);
-
-        // 2. Multi-Account ቼክ ማድረግ (40% - 70%)
-        updateProgress(60, "Analyzing local device sessions...");
-        await sleep(1200);
-        
-        const storedUserId = localStorage.getItem('verified_tg_user');
-        if (storedUserId && storedUserId != userId) {
-            handleResult(false, "Multi-Account Detected", "በአንድ ስልክ ላይ ከአንድ በላይ አካውንት መጠቀም አይቻልም!");
-            return;
+            verifyBtn.addEventListener('click', () => {
+                if (webhookUrl) {
+                    // የ Bots.business ዌብሁክን በስተጀርባ እንጠራዋለን (Fetch እናደርጋለን)
+                    fetch(webhookUrl)
+                        .then(() => {
+                            // ስኬታማ ከሆነ ዌብ አፑን ይዘጋዋል
+                            tg.close();
+                        })
+                        .catch((err) => {
+                            alert("ስህተት ተከስቷል! እንደገና ይሞክሩ።");
+                            tg.close();
+                        });
+                } else {
+                    alert("የማረጋገጫ ሊንኩ ስህተት አለበት (No Webhook URL)!");
+                    tg.close();
+                }
+            });
         }
-
-        // 3. VPN ቼክ ማድረግ (70% - 90%)
-        updateProgress(85, "Checking IP and Network proxy...");
-        await sleep(1000);
-
-        try {
-            const response = await fetch('https://ipapi.co/json/');
-            const ipData = await response.json();
-            const isEthiopia = ipData.country_code === 'ET';
-
-            if (!isEthiopia) {
-                handleResult(false, "VPN Detected", "እባክዎ ቪፒኤን (VPN) ያጥፉ እና እንደገና ይሞክሩ!");
-                return;
-            }
-        } catch (e) {
-            // ኢንተርኔት ካስቸገረ የሀገር ውስጥ ኔትወርክ መሆኑን በሌላ መንገድ መገመት ወይም ማሳለፍ ይቻላል
-        }
-
-        // 4. ማጠናቀቂያ (100%)
-        localStorage.setItem('verified_tg_user', userId);
-        updateProgress(100, "Device verified successfully!");
-        await sleep(800);
-        handleResult(true, "✅ Verified", "ስልክዎ በተሳካ ሁኔታ ተረጋግጧል!");
-    }
-
-    function updateProgress(percentage, text) {
-        progressBar.style.width = percentage + "%";
-        statusDesc.innerText = text;
-    }
-
-    function handleResult(isSuccess, title, message) {
-        loader.style.animation = "none";
-        statusTitle.innerText = title;
-        statusDesc.innerText = message;
-        
-        const statusString = isSuccess ? "VERIFIED" : "BANNED";
-        
-        // ለቦቱ መረጃውን መላክ
-        tg.sendData(JSON.stringify({ status: statusString, reason: title }));
-        
-        setTimeout(() => {
-            tg.close();
-        }, 2000);
-    }
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-</script>
+    </script>
 </body>
 </html>
